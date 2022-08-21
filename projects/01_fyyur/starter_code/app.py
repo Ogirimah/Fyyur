@@ -282,14 +282,19 @@ def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
+  search_word = request.form['search_term']
+  querry = Artist.query.filter(Artist.name.ilike(f'%{search_word}%')).all()
+
   response={
-    "count": 1,
-    "data": [{
-      "id": 4,
-      "name": "Guns N Petals",
-      "num_upcoming_shows": 0,
-    }]
+    "count": len(querry),
+    "data": []
   }
+  for artist in querry:
+    response['data'].append({
+      'id': artist.id,
+      'name': artist.name,
+      'num_upcoming_shows': artist.upcoming_shows_count
+    })
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/artists/<int:artist_id>')
@@ -301,7 +306,7 @@ def show_artist(artist_id):
 
   setattr(data, 'genres', data.genres.split(','))
 
-  # Past shows
+  # Past shows using DateTime.now as reference
   past_shows = list(filter(lambda show: show.start_time < datetime.now(), data.shows))
   temp_shows = []
   for show in past_shows:
@@ -315,7 +320,7 @@ def show_artist(artist_id):
   setattr(data, "past_shows", temp_shows)
   setattr(data,"past_shows_count", len(past_shows))
 
-  # Future shows
+  # Future shows using DateTime.now as reference
   upcoming_shows = list(filter(lambda show: show.start_time > datetime.now(), data.shows))
   temp_shows = []
   for show in upcoming_shows:
@@ -323,7 +328,7 @@ def show_artist(artist_id):
       output["artist_name"] = show.artists.name
       output["artist_id"] = show.artists.id
       output["artist_image_link"] = show.artists.image_link
-      output["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
+      output["start_time"] = str(show.start_time)
       temp_shows.append(output)
 
   setattr(data, "upcoming_shows", temp_shows)    
@@ -337,6 +342,7 @@ def show_artist(artist_id):
 def edit_artist(artist_id):
   form = ArtistForm()
   artist = Artist.query.get(artist_id)
+  # For Artists with >1 genres
   form.genres.data = artist.genres.split(",")
  
   return render_template('forms/edit_artist.html', form=form, artist=artist)
