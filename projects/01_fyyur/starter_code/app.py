@@ -125,26 +125,27 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
+  # Filter venues by city and state and append them to a list
   data = []
   venue_areas = db.session.query(Venue.state, Venue.city).group_by(Venue.state, Venue.city).all()
   for area in venue_areas:
     result = {
       'city': area.city,
       'state': area.state,
-      'venues': []
+      # 'venues': []
     }
 
     venues_result = Venue.query.filter_by(city=area.city, state=area.state).all()
     for venue in venues_result:
-      result2 = {
+      venues = []
+      venues.append({
         'id': venue.id,
         'name': venue.name,
         'num_upcoming_shows': venue.upcoming_shows_count
-      }
-      result['venues'] = result2
+      })
+      result['venues'] = venues
       data.append(result)
+  print (f'{data}')
 
   return render_template('pages/venues.html', areas=data);
 
@@ -200,7 +201,7 @@ def show_venue(venue_id):
       output["venue_name"] = show.venues.name
       output["venue_id"] = show.venues.id
       output["artist_image_link"] = show.artists.image_link
-      output["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
+      output["start_time"] = str(show.start_time)
       temp_shows.append(output)
 
   setattr(data, "upcoming_shows", temp_shows)    
@@ -316,7 +317,7 @@ def show_artist(artist_id):
       output["artist_name"] = show.artists.name
       output["artist_id"] = show.artists.id
       output["artist_image_link"] = show.artists.image_link
-      output["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
+      output["start_time"] = str(show.start_time)
       past_shows.append(output)
 
   # Future shows using DateTime.now as reference
@@ -336,6 +337,8 @@ def show_artist(artist_id):
     'city': data.city,
     'state': data.state,
     'phone': data.phone,
+    'website': data.website,
+    'facebook_link': data.facebook_link,
     'past_shows': past_shows,
     'past_shows_count': len(past_shows),
     'upcoming_shows': upcoming_shows,
@@ -366,7 +369,7 @@ def edit_artist_submission(artist_id):
   artist.facebook_link = request.form['facebook_link']
   artist.genres = request.form['genres']
   artist.image_link = request.form['image_link']
-  artist.website = request.form['website']
+  artist.website = request.form['website_link']
   try:
     db.session.commit()
     flash(f"Artist {request.form['name']} is updated successfully".format(artist.name))
@@ -399,7 +402,7 @@ def edit_venue_submission(venue_id):
   venue.facebook_link = request.form['facebook_link']
   venue.genres = request.form['genres']
   venue.image_link = request.form['image_link']
-  venue.website = request.form['website']
+  venue.website = request.form['website_link']
   try:
     db.session.commit()
     flash('Venue ' + request.form['name'] + ' was successfully updated!')
