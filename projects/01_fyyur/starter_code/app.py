@@ -3,9 +3,6 @@
 #----------------------------------------------------------------------------#
 
 from email.policy import default
-import json
-from pyexpat import model
-from tkinter import CASCADE
 import dateutil.parser
 import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
@@ -177,32 +174,32 @@ def show_venue(venue_id):
 
   data = Venue.query.get(venue_id)
 
-  setattr(data, "genres", data.genres.split(",")) # convert genre string back to array
+  setattr(data, "genres", data.genres.split(","))
 
-  # get past shows
+  # Past shows
   past_shows = list(filter(lambda show: show.start_time < datetime.now(), data.shows))
   temp_shows = []
   for show in past_shows:
-      temp = {}
-      temp["artist_name"] = show.artists.name
-      temp["artist_id"] = show.artists.id
-      temp["artist_image_link"] = show.artists.image_link
-      temp["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
-      temp_shows.append(temp)
+      output = {}
+      output["venue_name"] = show.venues.name
+      output["venue_id"] = show.venues.id
+      output["artist_image_link"] = show.artists.image_link
+      output["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
+      temp_shows.append(output)
 
   setattr(data, "past_shows", temp_shows)
   setattr(data,"past_shows_count", len(past_shows))
 
-  # get future shows
+  # Future shows
   upcoming_shows = list(filter(lambda show: show.start_time > datetime.now(), data.shows))
   temp_shows = []
   for show in upcoming_shows:
-      temp = {}
-      temp["artist_name"] = show.artists.name
-      temp["artist_id"] = show.artists.id
-      temp["artist_image_link"] = show.artists.image_link
-      temp["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
-      temp_shows.append(temp)
+      output = {}
+      output["venue_name"] = show.venues.name
+      output["venue_id"] = show.venues.id
+      output["artist_image_link"] = show.artists.image_link
+      output["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
+      temp_shows.append(output)
 
   setattr(data, "upcoming_shows", temp_shows)    
   setattr(data,"upcoming_shows_count", len(upcoming_shows))
@@ -299,21 +296,40 @@ def search_artists():
 def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO: replace with real artist data from the artist table, using artist_id
-  search_letters = request.form['search_term']
-  results = Artist.query.filter(Artist.name.ilike(f'%{search_letters}%')).all()
+  
+  data = Artist.query.get(artist_id)
 
-  response={
-    "count": len(results),
-    "data": []
-  }
-  for artist in results:
-    response['data'].append({
-      "id": artist.id,
-      "name": artist.name,
-      "num_upcoming_shows": artist.upcoming_shows_count,
-      })
+  setattr(data, 'genres', data.genres.split(','))
 
-  return render_template('pages/show_artist.html', artist=response)
+  # Past shows
+  past_shows = list(filter(lambda show: show.start_time < datetime.now(), data.shows))
+  temp_shows = []
+  for show in past_shows:
+      output = {}
+      output["artist_name"] = show.artists.name
+      output["artist_id"] = show.artists.id
+      output["artist_image_link"] = show.artists.image_link
+      output["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
+      temp_shows.append(output)
+
+  setattr(data, "past_shows", temp_shows)
+  setattr(data,"past_shows_count", len(past_shows))
+
+  # Future shows
+  upcoming_shows = list(filter(lambda show: show.start_time > datetime.now(), data.shows))
+  temp_shows = []
+  for show in upcoming_shows:
+      output = {}
+      output["artist_name"] = show.artists.name
+      output["artist_id"] = show.artists.id
+      output["artist_image_link"] = show.artists.image_link
+      output["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
+      temp_shows.append(output)
+
+  setattr(data, "upcoming_shows", temp_shows)    
+  setattr(data,"upcoming_shows_count", len(upcoming_shows))
+
+  return render_template('pages/show_artist.html', artist=data)
 
 #  Update
 #  ----------------------------------------------------------------
