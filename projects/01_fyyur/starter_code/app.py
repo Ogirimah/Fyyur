@@ -14,7 +14,7 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 import sys
-# from config import *
+import collections
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -27,6 +27,8 @@ db = SQLAlchemy(app)
 
 # TODO: connect to a local postgresql database
 migrate = Migrate(app, db)
+
+collections.Callable = collections.abc.Callable
 
 #----------------------------------------------------------------------------#
 # Models.
@@ -301,40 +303,47 @@ def search_artists():
 def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO: replace with real artist data from the artist table, using artist_id
-  
+  artist = {}
   data = Artist.query.get(artist_id)
 
-  setattr(data, 'genres', data.genres.split(','))
+  genres = data.genres.split(',')
 
   # Past shows using DateTime.now as reference
-  past_shows = list(filter(lambda show: show.start_time < datetime.now(), data.shows))
-  temp_shows = []
-  for show in past_shows:
+  past_shows_list = list(filter(lambda show: show.start_time < datetime.now(), data.shows))
+  past_shows = []
+  for show in past_shows_list:
       output = {}
       output["artist_name"] = show.artists.name
       output["artist_id"] = show.artists.id
       output["artist_image_link"] = show.artists.image_link
       output["start_time"] = show.start_time.strftime("%m/%d/%Y, %H:%M:%S")
-      temp_shows.append(output)
-
-  setattr(data, "past_shows", temp_shows)
-  setattr(data,"past_shows_count", len(past_shows))
+      past_shows.append(output)
 
   # Future shows using DateTime.now as reference
-  upcoming_shows = list(filter(lambda show: show.start_time > datetime.now(), data.shows))
-  temp_shows = []
-  for show in upcoming_shows:
+  upcoming_shows_list = list(filter(lambda show: show.start_time > datetime.now(), data.shows))
+  upcoming_shows = []
+  for show in upcoming_shows_list:
       output = {}
       output["artist_name"] = show.artists.name
       output["artist_id"] = show.artists.id
       output["artist_image_link"] = show.artists.image_link
       output["start_time"] = str(show.start_time)
-      temp_shows.append(output)
+      upcoming_shows.append(output)
 
-  setattr(data, "upcoming_shows", temp_shows)    
-  setattr(data,"upcoming_shows_count", len(upcoming_shows))
-
-  return render_template('pages/show_artist.html', artist=data)
+  artist = {
+    'id': data.id,
+    'name': data.name,
+    'city': data.city,
+    'state': data.state,
+    'phone': data.phone,
+    'past_shows': past_shows,
+    'past_shows_count': len(past_shows),
+    'upcoming_shows': upcoming_shows,
+    'upcoming_shows_count': len(upcoming_shows),
+    'genres': genres
+  }
+  
+  return render_template('pages/show_artist.html', artist=artist)
 
 #  Update
 #  ----------------------------------------------------------------
